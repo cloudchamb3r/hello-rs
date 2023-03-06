@@ -5,11 +5,11 @@ use std::io::{Read, Write};
 use std::net::*;
 use std::time::Duration;
 
-use hello::thread_pool::thread_pool::ThreadPool;
+use hello::thread_pool;
 
 fn handle_connection(mut stream: TcpStream) {
     let mut buffer = [0; 512];
-    stream.read(&mut buffer).unwrap();
+    stream.read_exact(&mut buffer).unwrap();
 
     let get = b"GET / HTTP/1.1\r\n";
     let sleep = b"GET /sleep HTTP/1.1\r\n";
@@ -28,7 +28,7 @@ fn handle_connection(mut stream: TcpStream) {
     f.read_to_string(&mut buf).unwrap();
 
     stream
-        .write(
+        .write_all(
             format!(
                 "{}\r\nContent-Length: {}\r\n\r\n{}",
                 status_line,
@@ -42,10 +42,10 @@ fn handle_connection(mut stream: TcpStream) {
 }
 
 fn main() {
-    let listner = TcpListener::bind("127.0.0.1:7878").unwrap();
-    let pool = ThreadPool::new(4).unwrap();
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = thread_pool::pool::ThreadPool::new(4).unwrap();
 
-    for stream in listner.incoming().take(2) {
+    for stream in listener.incoming().take(2) {
         let stream = stream.unwrap();
         pool.execute(|| {
             handle_connection(stream);
